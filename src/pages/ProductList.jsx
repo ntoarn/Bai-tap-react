@@ -1,14 +1,15 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import UseQueryParams from "../hooks/useQueryParams.js";
 import useFetchListWithParams from "../hooks/useFetchListWithParams.js";
+import useDebouce from "../hooks/useDebouce.js";
 
 const ProductList = () => {
     const [params, updateParams, resetParams] = UseQueryParams({
         search: "",
         skip: 0,
         limit: 12,
-        sortBy: "price",
-        order: "asc"
+        sortBy: "",
+        order: ""
     });
 
     const [products, loading, error] = useFetchListWithParams("products", params);
@@ -33,10 +34,63 @@ const ProductList = () => {
             });
         }
     };
-
-    if (loading) {
-        return <div>Loading...</div>;
+    const[search, setSearch] = useState(params.search)
+    const debounceSearch = useDebouce(search)
+    useEffect(() => {
+        updateParams({
+            ...params,
+            search: debounceSearch,
+            skip: 0,
+        })
+    }, [debounceSearch]);
+    const handleSearch = (e) => {
+        setSearch(e.target.value)
     }
+
+    const handleSortPrice = (e) => {
+        const sortPrice = e.target.value.toLowerCase();
+        if (!sortPrice){
+            console.log(sortPrice)
+            updateParams({
+                ...params,
+                order: "",
+                sortBy: "",
+                skip: 0,
+            });
+        }else {
+            updateParams({
+                ...params,
+                order: sortPrice,
+                sortBy: "price",
+                skip: 0,
+            });
+        }
+    }
+
+    const handleSortTitle = (e) => {
+        const sortPrice = e.target.value;
+        if (!sortPrice){
+            console.log(sortPrice)
+            updateParams({
+                ...params,
+                order: "",
+                sortBy: "",
+                skip: 0,
+            });
+        }else {
+            updateParams({
+                ...params,
+                order: sortPrice,
+                sortBy: "title",
+                skip: 0,
+            });
+        }
+    }
+
+
+    // if (loading) {
+    //     return <div>Loading...</div>;
+    // }
 
     if (error) {
         return <div>Error...</div>;
@@ -45,8 +99,33 @@ const ProductList = () => {
     return (
         <div className="container">
             <div className="row">
+                <div className="col-md-4 mb-3">
+                    <input value={search} onChange={handleSearch}  type="text" id="form1"
+                           className="form-control mt-3" placeholder={"Tìm kiếm"}/>
+                    <i className="fa-solid fa-magnifying-glass"></i>
+                </div>
+
+                <div className="col-md-4">
+                  <select onChange={handleSortPrice} className="form-select mb-3 mt-3"
+                          aria-label="Default select example">
+                    <option value="">Sắp xếp theo giá</option>
+                    <option value="desc">Cao → Thấp</option>
+                    <option value="asc">Thấp → Cao</option>
+                  </select>
+                </div>
+
+                <div className="col-md-4">
+                    <select onChange={handleSortTitle} className="form-select mb-3 mt-3"
+                            aria-label="Default select example">
+                        <option value="">Sắp xếp theo tên</option>
+                        <option value="desc">Từ z → a</option>
+                        <option value="asc">Từ a → z</option>
+                    </select>
+                </div>
+
                 <div className="row">
-                    {products.map((item) => (
+                    { loading ? "Loading..." : (
+                    products.map((item) => (
                         <div key={item.id} className="col-12 col-md-6 col-lg-4 col-xl-3 mb-3">
                             <div className="card">
                                 <img src={item.thumbnail} className="card-img-top" alt="..." />
@@ -57,7 +136,8 @@ const ProductList = () => {
                                 </div>
                             </div>
                         </div>
-                    ))}
+                    ))
+                    )}
 
                     <div className="row align-items-center justify-content-between mt-4">
                         <div className="col-auto">
